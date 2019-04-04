@@ -6,7 +6,6 @@ def log_likelihood_bernoulli(x, mu):
 	return torch.sum(torch.log(mu) * one_mask + torch.log(1-mu)*zero_mask, dim=1).mean()
 
 def kl_divergence_normal(mean, logvar):
-	print("\t", mean.mean(), logvar.mean())
 	return torch.sum(0.5 * (torch.exp(logvar) + mean**2 - logvar - 1), dim=1).mean()
 
 def loss_MNIST(output, target):
@@ -15,5 +14,4 @@ def loss_MNIST(output, target):
 	l2 = 0.0
 	for m,lv in zip(output['means'], output['logvars']):
 		l2 += kl_divergence_normal(m, lv)
-	print(l1.item(), l2.item())
 	return l2 - l1

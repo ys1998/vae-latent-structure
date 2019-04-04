@@ -28,4 +28,6 @@ class BinarizedMNISTDataset(torch.utils.data.Dataset):
         return self.images.size(0)
 
     def __getitem__(self, idx):
-        return (self.images[idx] > 127).type(torch.float), (self.images[idx] > 127).type(torch.float)
+        x = self.images[idx]
+        x = (x - x.min()) / (x.max() - x.min())
+        return (x > 0.5).type(torch.float), (x > 0.5).type(torch.float)

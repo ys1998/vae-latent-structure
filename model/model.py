@@ -16,13 +16,13 @@ class GraphVAE(BaseModel):
         # encoder: x -> h_x
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, 512),
-            nn.BatchNorm1d(512, affine=False, track_running_stats=False),
+            nn.BatchNorm1d(512),
             nn.ELU(),
             nn.Linear(512, 512),
-            nn.BatchNorm1d(512, affine=False, track_running_stats=False),
+            nn.BatchNorm1d(512),
             nn.ELU(),
             nn.Linear(512, 256),
-            nn.BatchNorm1d(256, affine=False, track_running_stats=False),
+            nn.BatchNorm1d(256),
             nn.ELU(),
             nn.Linear(256, 128)
         )
@@ -30,7 +30,7 @@ class GraphVAE(BaseModel):
         self.bottom_up = nn.ModuleList([
             nn.Sequential(
                 nn.Linear(128, 128),
-                nn.BatchNorm1d(128, affine=False, track_running_stats=False),
+                nn.BatchNorm1d(128),
                 nn.ELU(),
                 nn.Linear(128, node_dim),
                 nn.Linear(node_dim, 2*node_dim) # split into mu and logvar
@@ -41,23 +41,23 @@ class GraphVAE(BaseModel):
         self.top_down = nn.ModuleList([
             nn.Sequential(
                 nn.Linear((n_nodes - i - 1)*node_dim, 128), # parents of z_i are z_{i+1} ... z_N
-                nn.BatchNorm1d(128, affine=False, track_running_stats=False),
+                nn.BatchNorm1d(128),
                 nn.ELU(),
                 nn.Linear(128, node_dim),
                 nn.Linear(node_dim, 2*node_dim) # split into mu and logvar
             )
         for i in range(n_nodes-1)]) # ignore z_n
 
-        # decoder: z -> parameters of P(x)
+        # decoder: (z_1, z_2 ... z_n) -> parameters of P(x)
         self.decoder = nn.Sequential(
-            nn.Linear(node_dim, 256),
-            nn.BatchNorm1d(256, affine=False, track_running_stats=False),
+            nn.Linear(node_dim*n_nodes, 256),
+            nn.BatchNorm1d(256),
             nn.ELU(),
             nn.Linear(256, 512),
-            nn.BatchNorm1d(512, affine=False, track_running_stats=False),
+            nn.BatchNorm1d(512),
             nn.ELU(),
             nn.Linear(512, 512),
-            nn.BatchNorm1d(512, affine=False, track_running_stats=False),
+            nn.BatchNorm1d(512),
             nn.ELU(),
             nn.Linear(512, input_dim)
         )
@@ -72,7 +72,7 @@ class GraphVAE(BaseModel):
         self.gumbel = D.Gumbel(0., 1.)
 
         # other parameters / distributions
-        self.tau = torch.tensor(1.)
+        self.tau = 1.0
 
     def forward(self, x):
         # x: (batch_size, input_size)
@@ -102,26 +102,21 @@ class GraphVAE(BaseModel):
             mu_bu, logvar_bu = bu[:, :self.node_dim], bu[:, self.node_dim:]
             # precision weighted fusion
             mu_zi = (mu_td * torch.exp(logvar_bu) + mu_bu * torch.exp(logvar_td)) / (torch.exp(logvar_td) + torch.exp(logvar_bu) + EPSILON)
-            sigma_zi = torch.sqrt(1. / (torch.exp(-logvar_bu) + torch.exp(-logvar_td) + EPSILON))
+            sigma_zi = (torch.exp(.5*logvar_bu) * torch.exp(.5*logvar_td)) / torch.sqrt(torch.exp(logvar_bu) + torch.exp(logvar_td) + EPSILON)
             # sample z_i from P(z_i | pa(z_i), x)
-            z_i = D.Normal(mu_zi, sigma_zi).sample()
+            z_i = mu_zi + sigma_zi * self.unit_normal.sample([x.size(0)])
             # store samples and parameters
             parents.append(z_i)
             mu_z.append(mu_zi)
             sigma_z.append(sigma_zi)
 
-        # calculate parameters of approximate posterior distribution q(z|x)
-        mu_by_var = sum([m/(v*v + EPSILON) for m,v in zip(mu_z, sigma_z)])
-        one_by_var = sum([1./(v*v + EPSILON) for v in sigma_z])
-        posterior_mu = mu_by_var / one_by_var
-        posterior_var = 1. / one_by_var
-        # sample z from q(z|x)
-        z = D.Normal(posterior_mu, posterior_var).sample()
+        # sample from approximate posterior distribution q(z_1, z_2 ... z_n|x)
+        z = torch.cat(parents, dim=1)
         out = torch.sigmoid(self.decoder(z))
 
         # build output
         output = {}
         output['mu'] = out
         output['means'] = mu_z
-        output['logvars'] = [2*torch.log(v) for v in sigma_z]
+        output['logvars'] = [2*torch.log(v + EPSILON) for v in sigma_z]
         return output
