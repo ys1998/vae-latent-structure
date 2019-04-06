@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.distributions as D
 from base import BaseModel
 
@@ -96,13 +97,13 @@ class GraphVAE(BaseModel):
             parent_vector = (c * torch.stack(parents)).permute(1,0,2).reshape(x.size(0), -1)
             # top-down inference
             td = self.top_down[i](parent_vector)
-            mu_td, logvar_td = td[:, :self.node_dim], td[:, self.node_dim:]
+            mu_td, sigma_td = td[:, :self.node_dim], F.softplus(td[:, self.node_dim:])
             # bottom-up inference
             bu = self.bottom_up[i](hx)
-            mu_bu, logvar_bu = bu[:, :self.node_dim], bu[:, self.node_dim:]
+            mu_bu, sigma_bu = bu[:, :self.node_dim], F.softplus(bu[:, self.node_dim:])
             # precision weighted fusion
-            mu_zi = (mu_td * torch.exp(logvar_bu) + mu_bu * torch.exp(logvar_td)) / (torch.exp(logvar_td) + torch.exp(logvar_bu) + EPSILON)
-            sigma_zi = (torch.exp(.5*logvar_bu) * torch.exp(.5*logvar_td)) / torch.sqrt(torch.exp(logvar_bu) + torch.exp(logvar_td) + EPSILON)
+            mu_zi = (mu_td * sigma_bu**2 + mu_bu * sigma_td**2) / (sigma_td**2 + sigma_bu**2 + EPSILON)
+            sigma_zi = (sigma_bu * sigma_td) / torch.sqrt(sigma_td**2 + sigma_bu**2 + EPSILON)
             # sample z_i from P(z_i | pa(z_i), x)
             z_i = mu_zi + sigma_zi * self.unit_normal.sample([x.size(0)])
             # store samples and parameters
@@ -118,5 +119,5 @@ class GraphVAE(BaseModel):
         output = {}
         output['mu'] = out
         output['means'] = mu_z
-        output['logvars'] = [2*torch.log(v + EPSILON) for v in sigma_z]
+        output['sigmas'] = sigma_z
         return output

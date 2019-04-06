@@ -57,6 +57,10 @@ class Trainer(BaseTrainer):
             loss.backward()
 
             # clip gradients
+            # for p in self.model.encoder.parameters():
+            #     if p.requires_grad and p.grad is not None:
+            #         print(torch.max(p.grad))
+
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 10.0)
 
             self.optimizer.step()
