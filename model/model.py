@@ -65,7 +65,7 @@ class GraphVAE(BaseModel):
 
         # mean of Bernoulli variables c_{i,j} representing edges
         self.gating_params = nn.ParameterList([
-            nn.Parameter(torch.empty(n_nodes - i - 1, 1, 1).uniform_())
+            nn.Parameter(torch.empty(n_nodes - i - 1, 1, 1).uniform_(0.4, 0.6), requires_grad=True)
         for i in range(n_nodes-1)]) # ignore z_n
 
         # distributions for sampling
@@ -120,4 +120,5 @@ class GraphVAE(BaseModel):
         output['mu'] = out
         output['means'] = mu_z
         output['sigmas'] = sigma_z
+        # output['gate_params'] = self.gating_params.detach()
         return output
