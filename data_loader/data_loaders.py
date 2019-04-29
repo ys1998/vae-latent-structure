@@ -29,5 +29,10 @@ class BinarizedMNISTDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         x = self.images[idx]
-        x = (x - x.min()) / (x.max() - x.min())
-        return (x > 0.5).type(torch.float), (x > 0.5).type(torch.float)
+        min_v = x.min()
+        range_v = x.max() - min_v
+        if range_v > 0:
+            normalised = (x - min_v) / range_v
+        else:
+            normalised = torch.zeros(x.size())
+        return (normalised > 0.5).type(torch.float)

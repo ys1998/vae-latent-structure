@@ -14,4 +14,4 @@ def loss_MNIST(output, target):
 	l2 = 0.0
 	for m,sigma in zip(output['means'], output['sigmas']):
 		l2 += kl_divergence_normal(m, sigma)
-	return l2 - l1
+	return l2, -l1

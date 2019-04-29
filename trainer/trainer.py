@@ -48,27 +48,22 @@ class Trainer(BaseTrainer):
 
         total_loss = 0
         total_metrics = np.zeros(len(self.metrics))
-        for batch_idx, (data, target) in enumerate(self.data_loader):
-            data, target = data.to(self.device), target.to(self.device)
+        for batch_idx, data in enumerate(self.data_loader):
+            data = data.to(self.device).type(torch.float)
 
             self.optimizer.zero_grad()
             output = self.model(data)
-            loss = self.loss(output, target)
+            kl, nll = self.loss(output, data)
+            loss = kl + nll
             loss.backward()
 
             # clip gradients
-            # for p in self.model.encoder.parameters():
-            #     if p.requires_grad and p.grad is not None:
-            #         print(torch.max(p.grad))
-
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 10.0)
 
             self.optimizer.step()
 
-            self.writer.set_step((epoch - 1) * len(self.data_loader) + batch_idx)
-            self.writer.add_scalar('loss', loss.item())
             total_loss += loss.item()
-            total_metrics += self._eval_metrics(output, target)
+            total_metrics += self._eval_metrics(output, data)
 
             if self.verbosity >= 2 and batch_idx % self.log_step == 0:
                 self.logger.info('Train Epoch: {} [{}/{} ({:.0f}%)] Loss: {:.6f}'.format(
@@ -77,7 +72,17 @@ class Trainer(BaseTrainer):
                     self.data_loader.n_samples,
                     100.0 * batch_idx / len(self.data_loader),
                     loss.item()))
-                # self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
+                # set step
+                self.writer.set_step((epoch - 1) * len(self.data_loader) + batch_idx)
+                # add losses
+                self.writer.add_scalar('loss', loss.item())
+                self.writer.add_scalar('kl', kl.item())
+                self.writer.add_scalar('nll', nll.item())
+                # add gating params
+                tag = "gates/{0}/{1}"
+                for i, p in enumerate(self.model.gating_params):
+                    for j, v in enumerate(p.data):
+                        self.writer.add_scalar(tag.format(i, i+j+1), v.item())
 
         log = {
             'loss': total_loss / len(self.data_loader),
@@ -109,16 +114,19 @@ class Trainer(BaseTrainer):
         total_val_loss = 0
         total_val_metrics = np.zeros(len(self.metrics))
         with torch.no_grad():
-            for batch_idx, (data, target) in enumerate(self.valid_data_loader):
-                data, target = data.to(self.device), target.to(self.device)
+            for batch_idx, data in enumerate(self.valid_data_loader):
+                data = data.to(self.device)
 
                 output = self.model(data)
-                loss = self.loss(output, target)
+                kl, nll = self.loss(output, data)
+                loss = kl + nll
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.writer.add_scalar('loss', loss.item())
+                self.writer.add_scalar('kl', kl.item())
+                self.writer.add_scalar('nll', nll.item())
                 total_val_loss += loss.item()
-                total_val_metrics += self._eval_metrics(output, target)
+                total_val_metrics += self._eval_metrics(output, data)
                 # self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
 
         # add histogram of model parameters to the tensorboard

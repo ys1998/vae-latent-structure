@@ -6,7 +6,7 @@
         "type": "GraphVAE",
         "args": {
             "input_dim": 784,
-            "n_nodes": 80,
+            "n_nodes": 10,
             "node_dim": 1
         }
     },
@@ -21,11 +21,12 @@
         }
     },
     "optimizer": {
-        "type": "Adam",
+        "type": "SGD",
         "args":{
             "lr": 0.001,
             "weight_decay": 0,
-            "amsgrad": true
+            "nesterov": true,
+            "momentum" : 0.9
         }
     },
     "loss": "loss_MNIST",
