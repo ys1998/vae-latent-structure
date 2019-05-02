@@ -58,7 +58,7 @@ class Trainer(BaseTrainer):
             loss.backward()
 
             # clip gradients
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 10.0)
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 5.0)
 
             self.optimizer.step()
 
@@ -98,6 +98,7 @@ class Trainer(BaseTrainer):
 
         # decay temperature by 0.99 every epoch
         self.model.tau *= 0.99
+        print("tau decayed to %f" % self.model.tau)
 
         return log
 
@@ -127,7 +128,6 @@ class Trainer(BaseTrainer):
                 self.writer.add_scalar('nll', nll.item())
                 total_val_loss += loss.item()
                 total_val_metrics += self._eval_metrics(output, data)
-                # self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
 
         # add histogram of model parameters to the tensorboard
         # for name, p in self.model.named_parameters():
