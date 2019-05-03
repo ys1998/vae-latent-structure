@@ -50,11 +50,12 @@ class Trainer(BaseTrainer):
         for batch_idx, data in enumerate(self.data_loader):
             data = data.to(self.device).type(torch.float)
 
-            self.optimizer.zero_grad()
-            output = self.model(data)
-            kl, nll = self.loss(output, data)
-            loss = kl + nll
-            loss.backward()
+            with torch.autograd.detect_anomaly():
+                self.optimizer.zero_grad()
+                output = self.model(data)
+                kl, nll = self.loss(output, data)
+                loss = kl + nll
+                loss.backward()
 
             # clip gradients
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 5.0)

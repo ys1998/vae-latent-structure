@@ -34,9 +34,10 @@ def main(config, resume):
     gate_no = -1
     freeze = [(0, 1), (0, 2), (0, 3), (0, 4), (1, 3)]
     freeze_values = [0, 1, 0, 1, 1]
+    
     for gate in gating_params:
         gate_no += 1
-        tensor_no = -1
+        tensor_no = gate_no
         for tensor in gate:
             tensor_no += 1
             if (gate_no, tensor_no) in freeze:

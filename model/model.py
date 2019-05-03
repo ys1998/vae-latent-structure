@@ -90,10 +90,10 @@ class GraphVAE(BaseModel):
             # compute gating constants c_{i,j}
             mu = self.gating_params[i]
             eps1, eps2 = self.gumbel.sample(mu.size()).to(x.device), self.gumbel.sample(mu.size()).to(x.device)
-            num = torch.exp(eps2 - eps1)
+            num = torch.exp((eps2 - eps1)/self.tau)
             t1 = torch.pow(mu, 1./self.tau)
-            t2 = torch.pow((1.-mu)*num, 1./self.tau)
-            c = t1 / (t1 + t2)
+            t2 = torch.pow((1.-mu), 1./self.tau)*num
+            c = t1 / (t1 + t2 + EPSILON)
             # find concatenated parent vector
             parent_vector = (c * torch.stack(parents)).permute(1,0,2).reshape(x.size(0), -1)
             # top-down inference
