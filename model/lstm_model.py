@@ -7,9 +7,9 @@ from base import BaseModel
 EPSILON = 1e-30
 
 
-class GraphVAE(BaseModel):
+class GraphLSTMVAE(BaseModel):
     def __init__(self, input_dim, n_nodes, node_dim, hidden_dim=128):
-        super(GraphVAE, self).__init__()
+        super(GraphLSTMVAE, self).__init__()
         # store parameters
         self.input_dim = input_dim
         self.n_nodes = n_nodes

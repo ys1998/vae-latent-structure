@@ -9,6 +9,9 @@ import model.lstm_model as module_arch
 from trainer import Trainer
 from utils import Logger
 
+torch.manual_seed(0)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 def get_instance(module, name, config, *args):
     return getattr(module, config[name]['type'])(*args, **config[name]['args'])

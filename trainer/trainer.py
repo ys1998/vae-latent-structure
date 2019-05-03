@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-from torchvision.utils import make_grid
 from base import BaseTrainer
 
 
@@ -50,12 +49,13 @@ class Trainer(BaseTrainer):
         total_metrics = np.zeros(len(self.metrics))
         for batch_idx, data in enumerate(self.data_loader):
             data = data.to(self.device).type(torch.float)
-
-            self.optimizer.zero_grad()
-            output = self.model(data)
-            kl, nll = self.loss(output, data)
-            loss = kl + nll
-            loss.backward()
+    
+            with torch.autograd.detect_anomaly():
+                self.optimizer.zero_grad()
+                output = self.model(data)
+                kl, nll = self.loss(output, data)
+                loss = kl + nll
+                loss.backward()
 
             # clip gradients
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 5.0)

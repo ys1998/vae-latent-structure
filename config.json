@@ -1,8 +1,8 @@
 {
-    "name": "GraphVAE",
+    "name": "GraphLSTMVAE",
     "n_gpu": 1,
     "arch": {
-        "type": "GraphVAE",
+        "type": "GraphLSTMVAE",
         "args": {
             "input_dim": 784,
             "n_nodes": 5,
@@ -29,7 +29,8 @@
     },
     "loss": "loss_MNIST",
     "metrics": [
-        "map_compare"
+        "map_compare",
+        "accuracy"
     ],
     "lr_scheduler": {
         "type": "StepLR",
