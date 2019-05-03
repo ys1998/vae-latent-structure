@@ -133,6 +133,7 @@ class RecurrentGraphVAE(BaseModel):
             """ sample from approximate posterior distribution q(z_1, z_2 ... z_n|x) """
             z = torch.cat(parents, dim=1)
             out = self.decoder(z) # change this as required
+            out[:, 0] = torch.sigmoid(out[:, 0])
 
             """ store variables """
             prev_z = z

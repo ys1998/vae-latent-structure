@@ -47,7 +47,7 @@ class Trainer(BaseTrainer):
 
         total_loss = 0
         total_metrics = np.zeros(len(self.metrics))
-        prev_z = torch.zeros(self.data_loader.batch_size, self.model.n_nodes)
+        prev_z = torch.zeros(self.data_loader.batch_size, self.model.n_nodes).to(self.device)
         for batch_idx, data in enumerate(self.data_loader):
 
             data = data.to(self.device).type(torch.float).permute(1,0,2) # convert to (T, N, :)
