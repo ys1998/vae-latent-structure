@@ -34,5 +34,5 @@ class BinarizedMNISTDataset(torch.utils.data.Dataset):
         if range_v > 0:
             normalised = (x - min_v) / range_v
         else:
-            normalised = torch.zeros(x.size())
+            normalised = torch.zeros(x.size()).to(x.device)
         return (normalised > 0.5).type(torch.float)
