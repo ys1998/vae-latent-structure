@@ -69,13 +69,13 @@ class RecurrentGraphVAE(BaseModel):
         # other parameters / distributions
         self.tau = 1.0
 
-    def forward(self, x):
+    def forward(self, x, init_z):
         # x: (seq_len, batch_size, input_size)
         T, N = x.size(0), x.size(1)
         mu_z_t = []
         sigma_z_t = []
         out_t = []
-        prev_z = torch.zeros(N, self.n_nodes)
+        prev_z = init_z
 
         for t in range(T):
             hx = self.encoder(x[t])
@@ -145,4 +145,4 @@ class RecurrentGraphVAE(BaseModel):
         output['out'] = torch.stack(out_t)
         output['means'] = mu_z_t
         output['sigmas'] = sigma_z_t
-        return output
+        return output, prev_z

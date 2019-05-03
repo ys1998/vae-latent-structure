@@ -12,7 +12,8 @@
         "type": "HandwritingDataLoader",
         "args": {
             "data_dir": "data/handwriting",
-            "batch_size": 1,
+            "batch_size": 64,
+            "bptt": 128,
             "shuffle": false,
             "validation_split": 0.2,
             "num_workers": 0
