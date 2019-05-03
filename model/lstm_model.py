@@ -50,7 +50,7 @@ class GraphVAE(BaseModel):
         #     )
         # for i in range(n_nodes-1)]) # ignore z_n
 
-        self.lstm = nn.LSTM(self.node_dim,512)
+        self.lstm = nn.LSTM(self.node_dim,hidden_dim)
 
         # decoder: (z_1, z_2 ... z_n) -> parameters of P(x)
         self.decoder = nn.Sequential(
@@ -98,7 +98,7 @@ class GraphVAE(BaseModel):
             # c = t1 / (t1 + t2)
             # find concatenated parent vector
             # parent_vector = (c * torch.stack(parents)).permute(1,0,2).reshape(x.size(0), -1)
-            parent_vector = parents[-1]
+            parent_vector = parents[-1].reshape(1,-1,1)
             # top-down inference
             output, hidden = lstm(parent_vector, hidden)
             mu_td = hidden[0][:,:self.node_dim]

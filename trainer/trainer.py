@@ -79,10 +79,10 @@ class Trainer(BaseTrainer):
                 self.writer.add_scalar('kl', kl.item())
                 self.writer.add_scalar('nll', nll.item())
                 # add gating params
-                tag = "gates/{0}/{1}"
-                for i, p in enumerate(self.model.gating_params):
-                    for j, v in enumerate(p.data):
-                        self.writer.add_scalar(tag.format(i, i+j+1), v.item())
+                # tag = "gates/{0}/{1}"
+                # for i, p in enumerate(self.model.gating_params):
+                #     for j, v in enumerate(p.data):
+                #         self.writer.add_scalar(tag.format(i, i+j+1), v.item())
 
         log = {
             'loss': total_loss / len(self.data_loader),
