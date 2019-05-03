@@ -86,6 +86,7 @@ class GraphVAE(BaseModel):
         sigma_z = [torch.ones(x.size(0), self.node_dim).to(x.device)]
 
         for i in reversed(range(self.n_nodes-1)):
+            self.gating_params[i].data = self.gating_params[i].data.clamp(0., 1.)
             # compute gating constants c_{i,j}
             mu = self.gating_params[i]
             eps1, eps2 = self.gumbel.sample(mu.size()).to(x.device), self.gumbel.sample(mu.size()).to(x.device)
