@@ -10,6 +10,11 @@ from trainer import Trainer
 from utils import Logger
 
 
+torch.manual_seed(0)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
+
 def get_instance(module, name, config, *args):
     return getattr(module, config[name]['type'])(*args, **config[name]['args'])
 
@@ -24,7 +29,7 @@ def main(config, resume):
     # build model architecture
     model = get_instance(module_arch, 'arch', config)
     print(model)
-    print("Nihal")
+
     gating_params = next(x for i, x in enumerate(model.children()) if i == 4)
     gate_no = -1
     freeze = [(0, 1), (0, 2), (0, 3), (0, 4), (1, 3)]
@@ -83,7 +88,10 @@ if __name__ == '__main__':
     elif args.resume:
         # load config from checkpoint if new config file is not given.
         # Use '--config' and '--resume' together to fine-tune trained model with changed configurations.
-        config = torch.load(args.resume)['config']
+        # config = torch.load(args.resume)['config']
+
+        with open(args.config) as handle:
+            config = json.load(handle)
 
     else:
         raise AssertionError(
