@@ -6,8 +6,9 @@ from base import BaseModel
 
 EPSILON = 1e-30
 
+
 class GraphVAE(BaseModel):
-    def __init__(self, input_dim, n_nodes, node_dim, hidden_dim = 128):
+    def __init__(self, input_dim, n_nodes, node_dim, hidden_dim=128):
         super(GraphVAE, self).__init__()
         # store parameters
         self.input_dim = input_dim
@@ -35,9 +36,9 @@ class GraphVAE(BaseModel):
                 nn.BatchNorm1d(128),
                 nn.ELU(),
                 nn.Linear(128, node_dim),
-                nn.Linear(node_dim, 2*node_dim) # split into mu and logvar
+                nn.Linear(node_dim, 2 * node_dim)  # split into mu and logvar
             )
-        for _ in range(n_nodes-1)]) # ignore z_n
+            for _ in range(n_nodes - 1)])  # ignore z_n
 
         # top-down inference: predicts parameters of P(z_i | Pa(z_i))
         # self.top_down = nn.ModuleList([
@@ -50,11 +51,12 @@ class GraphVAE(BaseModel):
         #     )
         # for i in range(n_nodes-1)]) # ignore z_n
 
-        self.lstm = nn.LSTM(self.node_dim,hidden_dim)
+        self.lstm = nn.LSTM(self.node_dim, hidden_dim)
+        self.projection = nn.Linear(hidden_dim, 2 * self.node_dim)
 
         # decoder: (z_1, z_2 ... z_n) -> parameters of P(x)
         self.decoder = nn.Sequential(
-            nn.Linear(node_dim*n_nodes, 256),
+            nn.Linear(node_dim * n_nodes, 256),
             nn.BatchNorm1d(256),
             nn.ELU(),
             nn.Linear(256, 512),
@@ -68,11 +70,13 @@ class GraphVAE(BaseModel):
 
         # mean of Bernoulli variables c_{i,j} representing edges
         self.gating_params = nn.ParameterList([
-            nn.Parameter(torch.empty(n_nodes - i - 1, 1, 1).fill_(0.5), requires_grad=True)
-        for i in range(n_nodes-1)]) # ignore z_n
+            nn.Parameter(torch.empty(n_nodes - i - 1, 1,
+                                     1).fill_(0.5), requires_grad=True)
+            for i in range(n_nodes - 1)])  # ignore z_n
 
         # distributions for sampling
-        self.unit_normal = D.Normal(torch.zeros(self.node_dim), torch.ones(self.node_dim))
+        self.unit_normal = D.Normal(torch.zeros(
+            self.node_dim), torch.ones(self.node_dim))
         self.gumbel = D.Gumbel(0., 1.)
 
         # other parameters / distributions
@@ -88,7 +92,7 @@ class GraphVAE(BaseModel):
         mu_z = [torch.zeros(x.size(0), self.node_dim).to(x.device)]
         sigma_z = [torch.ones(x.size(0), self.node_dim).to(x.device)]
 
-        for i in reversed(range(self.n_nodes-1)):
+        for i in reversed(range(self.n_nodes - 1)):
             # compute gating constants c_{i,j}
             # mu = self.gating_params[i]
             # eps1, eps2 = self.gumbel.sample(mu.size()).to(x.device), self.gumbel.sample(mu.size()).to(x.device)
@@ -98,21 +102,26 @@ class GraphVAE(BaseModel):
             # c = t1 / (t1 + t2)
             # find concatenated parent vector
             # parent_vector = (c * torch.stack(parents)).permute(1,0,2).reshape(x.size(0), -1)
-            parent_vector = parents[-1].reshape(1,-1,1)
+            parent_vector = parents[-1].reshape(1, -1, 1)
             # top-down inference
-            output, hidden = lstm(parent_vector, hidden)
-            mu_td = hidden[0][:,:self.node_dim]
-            sigma_td = hidden[0][:,:self.node_dim]
+            output, hidden = self.lstm(parent_vector, hidden)
+            td = self.projection(hidden[0][0])
+            mu_td = td[:, :self.node_dim]
+            sigma_td = F.softplus(td[:, self.node_dim:])
             # td = self.top_down[i](parent_vector)
             # mu_td, sigma_td = td[:, :self.node_dim], F.softplus(td[:, self.node_dim:])
             # bottom-up inference
             bu = self.bottom_up[i](hx)
-            mu_bu, sigma_bu = bu[:, :self.node_dim], F.softplus(bu[:, self.node_dim:])
+            mu_bu, sigma_bu = bu[:, :self.node_dim], F.softplus(
+                bu[:, self.node_dim:])
             # precision weighted fusion
-            mu_zi = (mu_td * sigma_bu**2 + mu_bu * sigma_td**2) / (sigma_td**2 + sigma_bu**2 + EPSILON)
-            sigma_zi = (sigma_bu * sigma_td) / (torch.sqrt(sigma_td**2 + sigma_bu**2) + EPSILON)
+            mu_zi = (mu_td * sigma_bu**2 + mu_bu * sigma_td**2) / \
+                (sigma_td**2 + sigma_bu**2 + EPSILON)
+            sigma_zi = (sigma_bu * sigma_td) / \
+                (torch.sqrt(sigma_td**2 + sigma_bu**2) + EPSILON)
             # sample z_i from P(z_i | pa(z_i), x)
-            z_i = mu_zi + sigma_zi * self.unit_normal.sample([x.size(0)]).to(x.device)
+            z_i = mu_zi + sigma_zi * \
+                self.unit_normal.sample([x.size(0)]).to(x.device)
             # store samples and parameters
             parents.append(z_i)
             mu_z.append(mu_zi)

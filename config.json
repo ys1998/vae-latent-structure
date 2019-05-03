@@ -1,7 +1,6 @@
 {
     "name": "GraphVAE",
     "n_gpu": 1,
-    
     "arch": {
         "type": "GraphVAE",
         "args": {
@@ -12,9 +11,9 @@
     },
     "data_loader": {
         "type": "MnistDataLoader",
-        "args":{
+        "args": {
             "data_dir": "data/",
-            "batch_size": 64,
+            "batch_size": 1024,
             "shuffle": false,
             "validation_split": 0.2,
             "num_workers": 0
@@ -22,7 +21,7 @@
     },
     "optimizer": {
         "type": "Adam",
-        "args":{
+        "args": {
             "lr": 0.001,
             "weight_decay": 0,
             "amsgrad": true
@@ -35,7 +34,7 @@
     "lr_scheduler": {
         "type": "StepLR",
         "args": {
-            "step_size": 5,
+            "step_size": 100,
             "gamma": 0.8
         }
     },
@@ -44,10 +43,8 @@
         "save_dir": "saved/",
         "save_period": 50,
         "verbosity": 2,
-        
-        "monitor": "min",
+        "monitor": "min loss",
         "early_stop": 1000,
-        
         "tensorboardX": true,
         "log_dir": "saved/runs"
     }

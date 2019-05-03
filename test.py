@@ -5,7 +5,7 @@ from tqdm import tqdm
 import data_loader.data_loaders as module_data
 import model.loss as module_loss
 import model.metric as module_metric
-import model.model as module_arch
+import model.lstm_model as module_arch
 from train import get_instance
 
 
