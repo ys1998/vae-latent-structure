@@ -48,18 +48,20 @@ class Trainer(BaseTrainer):
         total_loss = 0
         total_metrics = np.zeros(len(self.metrics))
         for batch_idx, data in enumerate(self.data_loader):
-            data = data.to(self.device).type(torch.float)
 
-            self.optimizer.zero_grad()
-            output = self.model(data)
-            kl, nll = self.loss(output, data)
-            loss = kl + nll
-            loss.backward()
+            data = data.to(self.device).type(torch.float).permute(1,0,2) # convert to (T, N, :)
 
-            # clip gradients
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 5.0)
+            with torch.autograd.detect_anomaly():
+                self.optimizer.zero_grad()
+                output = self.model(data)
+                kl, nll = self.loss(output, data)
+                loss = kl + nll
+                loss.backward()
 
-            self.optimizer.step()
+                # clip gradients
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 5.0)
+
+                self.optimizer.step()
 
             total_loss += loss.item()
             total_metrics += self._eval_metrics(output, data)
@@ -78,10 +80,14 @@ class Trainer(BaseTrainer):
                 self.writer.add_scalar('kl', kl.item())
                 self.writer.add_scalar('nll', nll.item())
                 # add gating params
-                tag = "gates/{0}/{1}"
-                for i, p in enumerate(self.model.gating_params):
+                tag = "self_gates/{0}/{1}"
+                for i, p in enumerate(self.model.self_gating_params):
                     for j, v in enumerate(p.data):
                         self.writer.add_scalar(tag.format(i, i+j+1), v.item())
+                tag = "recurrent_gates/{0}/{1}"
+                for i, p in enumerate(self.model.recurrent_gating_params):
+                    for j, v in enumerate(p.data[0]):
+                        self.writer.add_scalar(tag.format(i, j), v.item())
 
         log = {
             'loss': total_loss / len(self.data_loader),

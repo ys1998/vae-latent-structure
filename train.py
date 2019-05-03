@@ -5,15 +5,13 @@ import torch
 import data_loader.data_loaders as module_data
 import model.loss as module_loss
 import model.metric as module_metric
-import model.model as module_arch
+import model.recurrent_model as module_arch
 from trainer import Trainer
 from utils import Logger
-
 
 torch.manual_seed(0)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
-
 
 def get_instance(module, name, config, *args):
     return getattr(module, config[name]['type'])(*args, **config[name]['args'])
@@ -30,21 +28,21 @@ def main(config, resume):
     model = get_instance(module_arch, 'arch', config)
     print(model)
 
-    gating_params = next(x for i, x in enumerate(model.children()) if i == 4)
-    gate_no = -1
-    freeze = [(0, 1), (0, 2), (0, 3), (0, 4), (1, 3)]
-    freeze_values = [0, 1, 0, 1, 1]
-    for gate in gating_params:
-        gate_no += 1
-        tensor_no = -1
-        for tensor in gate:
-            tensor_no += 1
-            if (gate_no, tensor_no) in freeze:
-                value = freeze_values[freeze.index((gate_no, tensor_no))]
-                print("Setting {}-{} to {}".format(gate_no, tensor_no, value))
-                tensor.data = torch.Tensor(value)
-                # tensor.requires_grad = False
-                tensor = tensor.detach()
+    # gating_params = next(x for i, x in enumerate(model.children()) if i == 4)
+    # gate_no = -1
+    # freeze = [(0, 1), (0, 2), (0, 3), (0, 4), (1, 3)]
+    # freeze_values = [0, 1, 0, 1, 1]
+    # for gate in gating_params:
+    #     gate_no += 1
+    #     tensor_no = -1
+    #     for tensor in gate:
+    #         tensor_no += 1
+    #         if (gate_no, tensor_no) in freeze:
+    #             value = freeze_values[freeze.index((gate_no, tensor_no))]
+    #             print("Setting {}-{} to {}".format(gate_no, tensor_no, value))
+    #             tensor.data = torch.Tensor(value)
+    #             # tensor.requires_grad = False
+    #             tensor = tensor.detach()
 
     # get function handles of loss and metrics
     loss = getattr(module_loss, config['loss'])

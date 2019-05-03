@@ -1,19 +1,18 @@
 {
-    "name": "GraphVAE",
+    "name": "RecurrentGraphVAE",
     "n_gpu": 1,
     "arch": {
-        "type": "GraphVAE",
+        "type": "RecurrentGraphVAE",
         "args": {
-            "input_dim": 784,
-            "n_nodes": 5,
-            "node_dim": 1
+            "input_dim": 3,
+            "n_nodes": 5
         }
     },
     "data_loader": {
-        "type": "MnistDataLoader",
+        "type": "HandwritingDataLoader",
         "args": {
-            "data_dir": "data/",
-            "batch_size": 1024,
+            "data_dir": "data/handwriting",
+            "batch_size": 1,
             "shuffle": false,
             "validation_split": 0.2,
             "num_workers": 0
@@ -27,10 +26,8 @@
             "amsgrad": true
         }
     },
-    "loss": "loss_MNIST",
-    "metrics": [
-        "map_compare"
-    ],
+    "loss": "loss_handwriting",
+    "metrics": [],
     "lr_scheduler": {
         "type": "StepLR",
         "args": {
@@ -39,12 +36,12 @@
         }
     },
     "trainer": {
-        "epochs": 10000,
+        "epochs": 1000,
         "save_dir": "saved/",
         "save_period": 50,
         "verbosity": 2,
         "monitor": "off",
-        "early_stop": 10000,
+        "early_stop": 1000,
         "tensorboardX": true,
         "log_dir": "saved/runs"
     }

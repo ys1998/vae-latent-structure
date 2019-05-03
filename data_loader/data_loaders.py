@@ -36,3 +36,23 @@ class BinarizedMNISTDataset(torch.utils.data.Dataset):
         else:
             normalised = torch.zeros(x.size()).to(x.device)
         return (normalised > 0.5).type(torch.float)
+
+class HandwritingDataLoader(BaseDataLoader):
+    def __init__(self, data_dir, batch_size, shuffle, validation_split, num_workers, training=True):
+        self.data_dir = data_dir
+        self.dataset = HandwritingDataset(self.data_dir, train=training)
+        super(HandwritingDataLoader, self).__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)
+
+class HandwritingDataset(torch.utils.data.Dataset):
+    def __init__(self, data_dir, train=True):
+        strokes = np.load(os.path.join(data_dir, 'strokes.npy'), encoding='bytes')
+        if train:
+            self.data = strokes[:5000]
+        else:
+            self.data = strokes[5000:]
+
+    def __len__(self):
+        return self.data.shape[0]
+
+    def __getitem__(self, idx):
+        return torch.from_numpy(self.data[idx])
