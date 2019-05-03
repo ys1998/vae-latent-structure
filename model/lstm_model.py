@@ -40,17 +40,6 @@ class GraphLSTMVAE(BaseModel):
             )
             for _ in range(n_nodes - 1)])  # ignore z_n
 
-        # top-down inference: predicts parameters of P(z_i | Pa(z_i))
-        # self.top_down = nn.ModuleList([
-        #     nn.Sequential(
-        #         nn.Linear((n_nodes - i - 1)*node_dim, 128), # parents of z_i are z_{i+1} ... z_N
-        #         nn.BatchNorm1d(128),
-        #         nn.ELU(),
-        #         nn.Linear(128, node_dim),
-        #         nn.Linear(node_dim, 2*node_dim) # split into mu and logvar
-        #     )
-        # for i in range(n_nodes-1)]) # ignore z_n
-
         self.lstm = nn.LSTM(self.node_dim, hidden_dim)
         self.projection = nn.Linear(hidden_dim, 2 * self.node_dim)
 
@@ -67,12 +56,6 @@ class GraphLSTMVAE(BaseModel):
             nn.ELU(),
             nn.Linear(512, input_dim)
         )
-
-        # mean of Bernoulli variables c_{i,j} representing edges
-        self.gating_params = nn.ParameterList([
-            nn.Parameter(torch.empty(n_nodes - i - 1, 1,
-                                     1).fill_(0.5), requires_grad=True)
-            for i in range(n_nodes - 1)])  # ignore z_n
 
         # distributions for sampling
         self.unit_normal = D.Normal(torch.zeros(
@@ -93,15 +76,6 @@ class GraphLSTMVAE(BaseModel):
         sigma_z = [torch.ones(x.size(0), self.node_dim).to(x.device)]
 
         for i in reversed(range(self.n_nodes - 1)):
-            # compute gating constants c_{i,j}
-            # mu = self.gating_params[i]
-            # eps1, eps2 = self.gumbel.sample(mu.size()).to(x.device), self.gumbel.sample(mu.size()).to(x.device)
-            # num = torch.exp(eps2 - eps1)
-            # t1 = torch.pow(mu, 1./self.tau)
-            # t2 = torch.pow((1.-mu)*num, 1./self.tau)
-            # c = t1 / (t1 + t2)
-            # find concatenated parent vector
-            # parent_vector = (c * torch.stack(parents)).permute(1,0,2).reshape(x.size(0), -1)
             parent_vector = parents[-1].reshape(1, -1, 1)
             # top-down inference
             output, hidden = self.lstm(parent_vector, hidden)
