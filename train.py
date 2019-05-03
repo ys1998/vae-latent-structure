@@ -24,6 +24,22 @@ def main(config, resume):
     # build model architecture
     model = get_instance(module_arch, 'arch', config)
     print(model)
+    print("Nihal")
+    gating_params = next(x for i, x in enumerate(model.children()) if i == 4)
+    gate_no = -1
+    freeze = [(0, 1), (0, 2), (0, 3), (0, 4), (1, 3)]
+    freeze_values = [0, 1, 0, 1, 1]
+    for gate in gating_params:
+        gate_no += 1
+        tensor_no = -1
+        for tensor in gate:
+            tensor_no += 1
+            if (gate_no, tensor_no) in freeze:
+                value = freeze_values[freeze.index((gate_no, tensor_no))]
+                print("Setting {}-{} to {}".format(gate_no, tensor_no, value))
+                tensor.data = torch.Tensor(value)
+                # tensor.requires_grad = False
+                tensor = tensor.detach()
 
     # get function handles of loss and metrics
     loss = getattr(module_loss, config['loss'])
@@ -31,8 +47,10 @@ def main(config, resume):
 
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    optimizer = get_instance(torch.optim, 'optimizer', config, trainable_params)
-    lr_scheduler = get_instance(torch.optim.lr_scheduler, 'lr_scheduler', config, optimizer)
+    optimizer = get_instance(torch.optim, 'optimizer',
+                             config, trainable_params)
+    lr_scheduler = get_instance(
+        torch.optim.lr_scheduler, 'lr_scheduler', config, optimizer)
 
     trainer = Trainer(model, loss, metrics, optimizer,
                       resume=resume,
@@ -66,9 +84,10 @@ if __name__ == '__main__':
         # load config from checkpoint if new config file is not given.
         # Use '--config' and '--resume' together to fine-tune trained model with changed configurations.
         config = torch.load(args.resume)['config']
-        
+
     else:
-        raise AssertionError("Configuration file need to be specified. Add '-c config.json', for example.")
+        raise AssertionError(
+            "Configuration file need to be specified. Add '-c config.json', for example.")
 
     if args.device:
         os.environ["CUDA_VISIBLE_DEVICES"] = args.device
