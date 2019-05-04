@@ -28,24 +28,30 @@ def main(config, resume):
 
     # build model architecture
     model = get_instance(module_arch, 'arch', config)
-    print(model)
+    print(model.gating_params)
 
     gating_params = next(x for i, x in enumerate(model.children()) if i == 4)
     gate_no = -1
-    freeze = [(0, 1), (0, 2), (0, 3), (0, 4), (1, 3)]
-    freeze_values = [0, 1, 0, 1, 1]
+    freeze = [(0,1,0), (0,2,1), (0,3,0), (0,4,1), (1,2,0), (1,3,1), (1,4,0), (2,3,1), (2,4,1), (3,4,1)]
     
-    for gate in gating_params:
-        gate_no += 1
-        tensor_no = gate_no
-        for tensor in gate:
-            tensor_no += 1
-            if (gate_no, tensor_no) in freeze:
-                value = freeze_values[freeze.index((gate_no, tensor_no))]
-                print("Setting {}-{} to {}".format(gate_no, tensor_no, value))
-                tensor.data = torch.Tensor(value)
-                # tensor.requires_grad = False
-                tensor = tensor.detach()
+    for (x, y, v) in freeze:
+        print(model.gating_params[x][y - x -1])
+        model.gating_params[x][y - x -1].data = torch.Tensor([[v]])
+#         model.gating_params[x][y - x -1] = torch.autograd.variable([[v]]).detach()
+        print("Setting {}-{} to {}".format(x, y, v))
+        
+    
+#     for gate in gating_params:
+#         gate_no += 1
+#         tensor_no = gate_no
+#         for tensor in gate:
+#             tensor_no += 1
+#             if (gate_no, tensor_no) in freeze:
+#                 value = freeze_values[freeze.index((gate_no, tensor_no))]
+#                 print("Setting {}-{} to {}".format(gate_no, tensor_no, value))
+#                 tensor.data = torch.Tensor(value)
+#                 # tensor.requires_grad = False
+#                 tensor = tensor.detach()
 
     # get function handles of loss and metrics
     loss = getattr(module_loss, config['loss'])

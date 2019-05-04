@@ -94,6 +94,9 @@ class GraphVAE(BaseModel):
             t1 = torch.pow(mu, 1./self.tau)
             t2 = torch.pow((1.-mu), 1./self.tau)*num
             c = t1 / (t1 + t2 + EPSILON)
+            if torch.isnan(t1).any() or torch.isnan(t2).any() or torch.isnan(c).any() or torch.isnan(mu).any():
+                print(t1,t2,c,mu)
+                
             # find concatenated parent vector
             parent_vector = (c * torch.stack(parents)).permute(1,0,2).reshape(x.size(0), -1)
             # top-down inference
