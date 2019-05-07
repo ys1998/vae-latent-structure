@@ -34,13 +34,7 @@ def main(config, resume):
     gate_no = -1
     freeze = [(0,1,0), (0,2,1), (0,3,0), (0,4,1), (1,2,0), (1,3,1), (1,4,0), (2,3,1), (2,4,1), (3,4,1)]
     
-    for (x, y, v) in freeze:
-        print(model.gating_params[x][y - x -1])
-        model.gating_params[x][y - x -1].data = torch.Tensor([[v]])
-#         model.gating_params[x][y - x -1] = torch.autograd.variable([[v]]).detach()
-        print("Setting {}-{} to {}".format(x, y, v))
-        
-    
+            
 #     for gate in gating_params:
 #         gate_no += 1
 #         tensor_no = gate_no
@@ -71,6 +65,12 @@ def main(config, resume):
                       valid_data_loader=valid_data_loader,
                       lr_scheduler=lr_scheduler,
                       train_logger=train_logger)
+    
+    for (x, y, v) in freeze:
+        print(model.gating_params[x][y - x -1])
+        trainer.model.gating_params[x][y - x -1].data = torch.Tensor([[v]]).detach()
+#         model.gating_params[x][y - x -1] = torch.autograd.variable([[v]]).detach()
+        print("Setting {}-{} to {}".format(x, y, v))
 
     trainer.train()
 
