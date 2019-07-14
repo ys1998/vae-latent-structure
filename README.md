@@ -30,7 +30,7 @@ You can find a detailed description of the folder structure [here](https://githu
 2. `LSTM`: replacing top-down inference using a recurrent network (GraphLSTMVAE)
 3. `vrnn`: extension of GraphVAE to sequential data (RecurrentGraphVAE)
 
-All models have been described in the `model` folder in the respective branch. Please look at our [report](https://ys1998.github.io/research/vae_latent.pdf) for more details on our variants.
+All models have been described in the `model` folder in the respective branch. **Please look at our [report](https://ys1998.github.io/research/vae_latent.pdf) for more details on our variants and results.**
 
 ## Configuration
 All config files are specified in JSON format as described [here](https://github.com/victoresque/pytorch-template#usage). Model-specific parameters/options are provided via the `arch` field. The `config.json` files in each branch already contain default parameters for the respective model.
